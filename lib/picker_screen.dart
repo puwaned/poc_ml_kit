@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:poc_ml/models/ocr_detail.dart';
 import 'package:poc_ml/utils/ocr_services.dart';
+import 'package:screenshot/screenshot.dart';
+import 'package:share_plus/share_plus.dart';
 
 class PickerScreen extends StatefulWidget {
   const PickerScreen({super.key});
@@ -17,9 +19,10 @@ class PickerScreen extends StatefulWidget {
 class _State extends State<PickerScreen> {
   List<OcrDetail> ocrs = [];
   File? previewImage;
+  final _controller = ScreenshotController();
 
   void _pickImage() async {
-    final image = await ImagePicker.platform.getImageFromSource(
+    final image = await ImagePicker().pickImage(
       source: ImageSource.gallery,
     );
     if (image == null) return;
@@ -32,6 +35,27 @@ class _State extends State<PickerScreen> {
       previewImage = file;
       ocrs = ocrDetails;
     });
+  }
+
+  void _export() async {
+    try {
+      final capture = await _controller.captureFromLongWidget(
+        InheritedTheme.captureAll(
+          context,
+          Material(
+            child: _buildLongWidget(),
+          ),
+        ),
+        delay: Duration(milliseconds: 100),
+        context: context,
+      );
+      if (capture == null) return;
+      final file =
+          XFile.fromData(capture, mimeType: "image/png", name: "capture.png");
+      await Share.shareXFiles([file]);
+    } catch (err) {
+      print(err);
+    }
   }
 
   void _showPreviewFullImage() {
@@ -82,39 +106,65 @@ class _State extends State<PickerScreen> {
                 child: const Text('Preview Image'),
               ),
               TextButton(
-                onPressed: _resetOcrList,
-                child: const Text('Reset'),
+                onPressed: _export,
+                child: const Text('Capture'),
               ),
             ],
           ),
           Expanded(
-            child: ListView.separated(
-              separatorBuilder: (context, index) => const Divider(),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 15.0, vertical: 10.0),
-              itemCount: ocrs.length,
-              itemBuilder: (context, index) {
-                final ocr = ocrs.elementAt(index);
-                return Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Image.file(File(ocr.subPath)),
-                        const SizedBox(height: 10.0),
-                        Text('ML: ${ocr.mlText}'),
-                        Text('Tess: ${ocr.tessText}'),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
+            child: _buildList(),
           )
         ],
       ),
+    );
+  }
+
+  Widget _buildLongWidget() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: ocrs.map((ocr) {
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.file(File(ocr.subPath)),
+                const SizedBox(height: 10.0),
+                Text('ML: ${ocr.mlText}'),
+                Text('Tess: ${ocr.tessText}'),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildList() {
+    return ListView.separated(
+      separatorBuilder: (context, index) => const Divider(),
+      padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 10.0),
+      itemCount: ocrs.length,
+      itemBuilder: (context, index) {
+        final ocr = ocrs.elementAt(index);
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.file(File(ocr.subPath)),
+                const SizedBox(height: 10.0),
+                Text('ML: ${ocr.mlText}'),
+                Text('Tess: ${ocr.tessText}'),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

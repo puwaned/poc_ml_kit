@@ -20,9 +20,9 @@ class OcrServices {
       final cropImage = copyCrop(
         image,
         x: rect.left.toInt(),
-        y: rect.top.toInt(),
-        width: rect.right.toInt() - rect.left.toInt(),
-        height: rect.bottom.toInt() - rect.top.toInt(),
+        y: rect.top.toInt() ,
+        width: (rect.right.toInt() - rect.left.toInt()) ,
+        height: (rect.bottom.toInt() - rect.top.toInt()) ,
       );
 
       List<int> jpgBytes = encodeJpg(cropImage);
