@@ -22,15 +22,18 @@ class _State extends State<PickerScreen> {
   final _controller = ScreenshotController();
 
   void _pickImage() async {
+
     final image = await ImagePicker().pickImage(
       source: ImageSource.gallery,
     );
     if (image == null) return;
 
     final file = File(image.path);
-
+    final stopwatch = Stopwatch()..start();
     final ocrDetails = await OcrServices.mlKitTextrecognize(file);
-
+    print('time pass ${stopwatch.elapsed.inSeconds}');
+    stopwatch.stop();
+    stopwatch.reset();
     setState(() {
       previewImage = file;
       ocrs = ocrDetails;
